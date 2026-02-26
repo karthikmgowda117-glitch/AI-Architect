@@ -1,18 +1,12 @@
 import json
 import uvicorn
-import sys
-import os
 from fastapi import FastAPI, Query
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-# Ensure the 'agents' folder is findable
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# 1. DEFINE THE APP (MUST BE AT THE TOP LEVEL - NO INDENTATION)
+# THE CRITICAL LINE: Must be at the top level for Uvicorn to find it
 app = FastAPI(title="ResearchPilot AI Core")
 
-# 2. SETUP CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,16 +14,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. INITIALIZE THE CORE
+# 1. INITIALIZE THE CORE
 try:
     from agents.core.orchestrator import ResearchOrchestrator
     orchestrator = ResearchOrchestrator()
-    print("✅ Cognitive Core Loaded Successfully")
+    print("✅ Cognitive Core (Agents & FAISS) Loaded Successfully")
 except Exception as e:
     print(f"❌ Error Loading Orchestrator: {e}")
     orchestrator = None
-
-# --- ROUTES ---
 
 @app.get("/")
 async def root():
@@ -50,6 +42,5 @@ async def stream_research(topic: str = Query(...)):
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
-# --- SERVER START ---
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
